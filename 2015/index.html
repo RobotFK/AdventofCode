@@ -13,7 +13,7 @@ body {
 
 </style>
 
- <script src="1.js"></script> 
+
  
 </head>
 <body>
@@ -23,8 +23,12 @@ body {
 	<table>
 		<tr>
 			<th>Day 1</th>
-			<th><button type="button" onclick="1-1()">Part 1</button></th>
-			<th><button type="button" onclick="1-2()">Part 2</button></th>
+			<th>
+			<button type="button" onclick="Day_1_1()">Part 1</button>
+			<input type='file' id="Day_1_Input" accept=".txt"  />
+			<!--onchange='onChooseFile(event, onFileLoad.bind(this, "contents"))' -->
+			</th>
+			<th><button type="button" onclick="Day_1_2()">Part 2</button></th>
 		</tr>
 	</table>
 </div>
@@ -33,3 +37,5 @@ body {
 <div class="padding"></div>
 </body>
 </html> 
+
+ <script src="1.js"></script> 
