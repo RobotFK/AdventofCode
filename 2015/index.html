@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html>
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ <!--<script src="chart.js"></script>-->
+ 
 <head>
 <style>
 .padding{
@@ -8,6 +11,12 @@ background-color: #BABABA;
 }
 body {
   text-align: center;
+}
+
+details {
+  border: 1px solid #111;
+  border-radius: 10px;
+  padding: 5px 5px 5px;
 }
 
 </style>
@@ -21,27 +30,31 @@ body {
 <div id="selector">
 	<table>
 		<tr>
-			<th>Day 1</th>
-			<th><input type='file' id="Day_1_Input" accept=".txt"  />
+			<th>
+			<details>
+			<summary>Day 1</summary>
+			<input type='file' id="Day_1_Input" accept=".txt"  />
+			<button type="button" onclick="Day_1_1()">Part 1</button>
+			<button type="button" onclick="Day_1_2()">Part 2</button>
+			</details>
 			</th>
-			<th><button type="button" onclick="Day_1_1()">Part 1</button>
-			</th>
-			<th><button type="button" onclick="Day_1_2()">Part 2</button>
+			<th>
+			<details>
+			<summary>Day 2</summary>
+			<input type='file' id="Day_2_Input" accept=".txt"  />
+			<button type="button" onclick="Day_2_1()">Part 1</button>
+			<button type="button" onclick="Day_2_2()">Part 2</button>
+			</details>
 			</th>
 		</tr>
 	</table>
 </div>
-<div id="output"></div>
+<div id="visualisation">
+</div>
+
+<div id="result"></div>
 
 <div class="padding"></div>
 </body>
+<script src="1.js"></script> 
 </html> 
- 
- <!--
- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
- -->
- <!--
- <script src="chart.js"></script>
- -->
- <script src="1.js">
- </script> 
