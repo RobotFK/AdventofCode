@@ -11,18 +11,13 @@ $myinput = Get-Content -Path .\8-1.txt
 
 function Get-Characters{ #Returns the number of characters in memory for the values of the strings
 param(
-    [string]$string# and,or,lshift,rshift
+    [string]$string
     )
-    #$string = -join($string[1..($string.Length-2)]) #Remove Front and Trailing Quotes
-    
     $string = $string -replace "(\\\\)", "/" #backslashes
     $string = $string -replace "((?<!\\)\\x[a-z|0-9][a-z|0-9])", "_" #hex (just replaced by underscores)
     $string = $string -replace "(\\`"(?=[^\t\n\r]))", "`"" #quotes
-    #$string = $string -replace "(\\\\)+", "\" #backslashes
-
     #Write-Host $string
 
-    #$string = -join("`"",$string,"`"") #Add Front and Trailing Quotes
     return ($string.Length-2)
 }
 
