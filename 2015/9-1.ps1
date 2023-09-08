@@ -80,7 +80,7 @@ param(
 
 Write-Host "Generation Complete running Time solver"
 $rt = Get-PermutationsTime $permuatations[0]#Shortest Route time of a pair
-1..(($permuatations.Length/2)-1)|%{ # We only need halve, as the last place in $permutaiontn is due to the algorithm just incrementing
+1..(($permuatations.Length)-1)|%{
 $sum =  Get-PermutationsTime $permuatations[$_]
 if($sum -lt $rt){$rt = $sum;Write-Host "Permutaion $($_) is new fastest $($rt)"}
 }
