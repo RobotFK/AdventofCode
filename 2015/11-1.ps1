@@ -18,7 +18,8 @@ param(
 function Generate-NextValidPw{
 param(
     [string]$oldpw
-)    $rpw = $oldpw #runningpw
+)
+    $rpw = $oldpw #runningpw
     Write-Host $rpw
     while(-not (Test-ValidPw $rpw)){
         #Write-Host "Testing $($rpw)"
@@ -43,19 +44,9 @@ param(
         }
 
         $rpw = ($pwarr|%{[char]$_}) -join "" # Chararray to String
-        if($rpw -like "hxbxxz*"){return "Too late"}
     }
     Write-Host "Valid: $($rpw)"   
     return $rpw
 }
 
-
 Generate-NextValidPw $myinput
-# hxbxxyzz is valid, but too late I think
- while($false){
- $oldpw = "hxbxwxba"
-
- $pwarr = @()
- $oldpw.ToCharArray()|%{$pwarr+=[int][char]$_}
- $pwarr = $oldpw.ToCharArray()
- }
