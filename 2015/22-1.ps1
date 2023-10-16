@@ -1,0 +1,144 @@
+cd C:\Daten\2015
+
+$myinput = Get-Content -Path .\22-1.txt
+
+$player = @{hp = 50;mana =500}
+$boss = @{hp = $myinput[0].Split()[-1];dmg = $myinput[1].Split()[-1]}
+
+$mm =@{ 
+    name = "Magic Missile"
+    cost = 53
+    dmg = 4
+    }
+
+$drain =@{
+    name = "Drain"
+    cost = 73
+    dmg = 2
+    heal = 2
+    }
+
+$Shield =@{
+    name = "Shield"
+    id = 0 #Index where in $activespells the ttl is stored
+    cost = 113
+    ttl = 6
+    armor = 7
+    }
+
+$Poison  =@{
+    name = "Poison"
+    id = 1 #Index where in $activespells the ttl is stored
+    cost = 173
+    ttl = 6
+    dmg = 3
+    }
+
+$Recharge  =@{
+    name = "Recharge"
+    id = 2 #Index where in $activespells the ttl is stored
+    cost = 229
+    ttl = 5
+    mana = 101
+    }
+$spells = @($mm,$drain,$shield,$Poison,$Recharge)
+
+#Note that spells with a Time are active twice between each boss attack
+$minmana = 53
+
+$activespells = @(0,0,0) #Shield,Poison,Recharge rounds left
+$node = @($player.hp , $player.mana ,$boss.hp,$boss.dmg)+$activespells + 0 #Spent mana counter
+#Yes, strings. This is the best for comparing complex data that i found
+
+#$node =@(10,250,14,8)+$activespells + 0
+
+$node = $node -join ' '
+$tree=@() #Each new layer of the tree covers both a player and Boss turn
+$tree+=,@($node)
+
+$minspentmana = [int]::MaxValue
+while($true){
+    $tree+=,@()
+    Write-Host "Testing $($tree[-2].Length) nodes"
+
+    $count = 0
+    foreach($node in $tree[-2]){
+        #Progressblock , Displays a Progress bar
+        $count ++
+        $progress = [math]::Round($count/$tree[-2].Length * 1000)/10
+        Write-Progress -Activity "Progress of Checking $($tree.Length): $($tree[-2].Length)" -Status "$progress% Complete:" -PercentComplete $progress 
+        #End of Progressblock
+
+        $snode = @() #Sliced node
+        $node.Split()|%{$snode+=[int]$_}
+
+
+        if($snode[-1] -gt $minspentmana){continue}#Node is already worse than already submitted result
+        #Base calculations
+        if($tree.Length -gt 2){#Stops Calcuations before the first player action
+
+        #Boss Attack Turn
+        $dmg = $snode[3]
+        if($snode[4] -ne 0){$dmg -= $shield.armor;$snode[4]--} #Shield
+        if($snode[5] -ne 0){$snode[2]-= $Poison.dmg;$snode[5]--}#Poison
+        if($snode[6] -ne 0){$snode[1]+= $Recharge.mana;$snode[6] --}#Recharge
+        #Test if Boss out of HP
+        if($snode[2] -le 0){
+            Write-Host "Win!";
+            if($snode[-1] -lt $minspentmana){
+                Write-host "New low: $($snode[-1])" 
+                $minspentmana = $snode[-1]
+            }
+            continue
+        }
+        $snode[0] -= $dmg #Boss attack
+
+        #Test if Out of Hp
+        if($snode[0] -le 0){
+            #Write-Host "Lost"
+            continue
+        }
+        #Player Attack Turn
+        if($snode[4] -ne 0){$snode[4]--} #Shield
+        if($snode[5] -ne 0){$snode[2]-= $Poison.dmg;$snode[5]--}#Poison
+        if($snode[6] -ne 0){$snode[1]+= $Recharge.mana;$snode[6] --}#Recharge
+        
+        #Test if Boss out of HP
+        if($snode[2] -le 0){
+            Write-Host "Win!";
+            if($snode[-1] -lt $minspentmana){
+                Write-host "New low: $($snode[-1])" 
+                $minspentmana = $snode[-1]
+            }
+            continue
+        }
+        }
+        #Write-Host "Current (Pre spell): `n $($snode)"
+        if($snode[1] -lt $minmana){continue}#Cant afford any spell
+        
+        :spells foreach ($spell in $spells){
+            $ssnode= @()+$snode #Sliced Spell node
+            #Write-Host "$($spell.name)"
+            if($ssnode[1] -lt $spell.cost){continue spells}#Cant afford this spell
+            #Applying new spell
+            if($spell.ttl -ne $null){#Spell has a ttl
+                if($ssnode[$spell.id +4]){continue spells}#Spell is already active
+                $ssnode[$spell.id +4] += $spell.ttl
+
+            }else{#Spell is instant
+                $ssnode[0] += $spell.heal
+                $ssnode[2] -= $spell.dmg
+            }
+            $ssnode[1] -= $spell.cost
+            $ssnode[-1] += $spell.cost
+            $node = $ssnode -join ' '
+            if(($tree[-1] -match $node).Length -eq 0){
+            #if($node -notin $tree[-1]){
+                #Write-Host "+ $($spell.name)"
+                $tree[-1]+=,@($node)
+            }
+        }
+    }
+    if($tree[-1].Length -lt 1){break}
+    #if($tree.Length -ge 11){break}
+}
