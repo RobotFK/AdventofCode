@@ -20,6 +20,9 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="01-1.cpp" />
+		<Unit filename="01-2.cpp" />
+		<Unit filename="days.h" />
 		<Unit filename="main.cpp" />
 		<Extensions />
 	</Project>
