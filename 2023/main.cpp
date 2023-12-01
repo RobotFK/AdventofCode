@@ -6,6 +6,8 @@ int main()
 {
     D_1_1();
     D_1_2();
-  //Future Days here
+    D_2_1();
+    D_2_2();
+    //Future Days here
     return 0;
 }
