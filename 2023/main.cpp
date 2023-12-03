@@ -1,5 +1,6 @@
 #include <iostream>
 #include "days.h"
+#include <vector>
 using namespace std;
 
 int main()
