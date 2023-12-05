@@ -1,10 +1,12 @@
 # depslib dependency file v1.0
-1701615427 source:c:\users\robotfk\documents\github.io\adventofcode\2023\main.cpp
+1701778453 source:c:\users\robotfk\documents\github.io\adventofcode\2023\main.cpp
 	<iostream>
 	"days.h"
 	<vector>
 
-1701581227 c:\users\robotfk\documents\github.io\adventofcode\2023\days.h
+1701778453 c:\users\robotfk\documents\github.io\adventofcode\2023\days.h
+	<vector>
+	<string>
 
 1701452683 source:c:\users\robotfk\documents\github.io\adventofcode\2023\01-1.cpp
 	<iostream>
@@ -35,7 +37,7 @@
 	<sstream>
 	<string>
 
-1701615427 source:c:\users\robotfk\documents\github.io\adventofcode\2023\03-2.cpp
+1701615481 source:c:\users\robotfk\documents\github.io\adventofcode\2023\03-2.cpp
 	<iostream>
 	"days.h"
 	<fstream>
@@ -48,4 +50,42 @@
 	<fstream>
 	<vector>
 	<string>
+
+1701778452 source:c:\users\robotfk\documents\github.io\adventofcode\2023\04-1.cpp
+	<iostream>
+	"days.h"
+	<fstream>
+	<vector>
+	<sstream>
+	<math.h>
+
+1701778452 source:c:\users\robotfk\documents\github.io\adventofcode\2023\04-2.cpp
+	<iostream>
+	"days.h"
+	<fstream>
+	<vector>
+	<sstream>
+
+1701778453 source:c:\users\robotfk\documents\github.io\adventofcode\2023\05-1.cpp
+	<iostream>
+	"days.h"
+	<fstream>
+	<vector>
+	<sstream>
+	<map>
+
+1701800872 source:c:\users\robotfk\documents\github.io\adventofcode\2023\05-2.cpp
+	<iostream>
+	"days.h"
+	<fstream>
+	<vector>
+	<sstream>
+	<map>
+
+1701778453 source:c:\users\robotfk\documents\github.io\adventofcode\2023\tools.cpp
+	<iostream>
+	"days.h"
+	<fstream>
+	<vector>
+	<sstream>
 
