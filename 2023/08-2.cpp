@@ -3,8 +3,22 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <array>
+#include <numeric>
 using namespace std;
 
+long long gcd(long long a, long long b){
+    while(a!=0||b!=0){
+        if (a == 0) return b;
+            b %= a;
+        if (b == 0) return a;
+            a %= b;
+    }
+}
+
+long long lcm(long long a,long long b){
+    return (a*b)/gcd(a,b);
+}
 void D_8_2(){
     static vector<string> inputvector;
     string line;
@@ -47,30 +61,56 @@ void D_8_2(){
         }
         //cout << source.id << "->"<<source.left->id <<" or "<<source.right->id << endl;
     }
-    node*here = nullptr;
     node*there =nullptr;
-    vector<*nodes>heres;
+    vector<node*>heres;
     for(auto&source:nodes){
-        if(source.id[2]=="A"){
+        if(source.id.substr(2,1)=="A"){
             heres.push_back(&source);
         }
     }
-    return;
+    cout<<"Calculating "<<heres.size() <<" positions"<<endl;
+    vector <int> offset(heres.size(),0);//Time from the starting pos until the first Z pos
+    vector <int> cycle(heres.size(),0);//Time to reach the same Z pos + direction index again
+
+    //for(auto&x:offset){cout << x<<","<<endl;}
+
     int steps=0;
-    while((*here).id!="ZZZ"){
+    int cycels_found =0;
+    while(cycels_found != heres.size()){
         int index = steps%directions.size();
-        //cout <<directions[index]<<endl;
-        //cout <<(*here).id<<"+ ";
-        if(directions[index] == 'L'){
-            there=(*here).left;
-            here=there;
-        }else{
-            there=(*here).right;
-            here=there;
+        int hindex = 0;
+        for(auto&here:heres){
+            if(directions[index] == 'L'){
+                //cout<<(*here).id<<"-L->"<<(*here).left->id<<endl;
+                there=(*here).left;
+                here=there;
+            }else{
+                //cout<<(*here).id<<"-R->"<<(*here).left->id<<endl;
+                there=(*here).right;
+                here=there;
+            }
+            if((*here).id.substr(2,1)=="Z"){
+                    if(offset[hindex] == 0){
+                        offset[hindex] = steps+1;
+                    }else if(cycle[hindex] == 0){
+                        cycle[hindex] = steps+1-offset[hindex];
+                        cycels_found++;
+                    }
+            }
+            hindex++;
         }
-        steps++;
+        steps++;//More than 350000000 steps
+
     }
-    cout<<endl<<"Taken "<<steps<< " steps to ZZZ";
+
+    long long all_lcm=1;
+    for(int i=0;i!=heres.size();i++){
+            cout <<"Offset "<< offset[i]<<" then at Cycle "<< cycle[i]<<endl;
+            all_lcm = lcm(all_lcm,cycle[i]);
+    }
+
+
+    cout<<endl<<"Takes "<<all_lcm<< "steps to reach all Heres to __Z";
 
     return;
 }

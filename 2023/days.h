@@ -52,7 +52,7 @@ void D_24_1();
 void D_24_2();
 void D_25_1();
 
+//Tools:
 std::vector<std::string> split_string(std::string& input, char delimiter);
-
 
 #endif // DAYS_H_INCLUDED
