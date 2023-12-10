@@ -36,6 +36,8 @@
 		<Unit filename="07-2.cpp" />
 		<Unit filename="08-1.cpp" />
 		<Unit filename="08-2.cpp" />
+		<Unit filename="09-1.cpp" />
+		<Unit filename="09-2.cpp" />
 		<Unit filename="days.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="tools.cpp" />

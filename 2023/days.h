@@ -22,6 +22,8 @@ void D_8_1();
 void D_8_2();
 void D_9_1();
 void D_9_2();
+void D_10_1();
+void D_10_2();
 void D_11_1();
 void D_11_2();
 void D_12_1();
