@@ -3,14 +3,18 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <unordered_map>
 using namespace std;
 //FIX INPUT line 154
+
+
 
 struct section{
     string record;
     vector<int> groups;
-    long long arrangements = 1;
 };
+
+unordered_map<string,long long>known_arrangements;
 
 bool is_valid_placement2(string&record,vector<int>&placement,vector<int>&groups,bool visuals=false){
     int group_index=0;//Next or Current group that is evaluated
@@ -119,24 +123,40 @@ long long arrangements(string&record,vector<int>&groups,bool visuals=false){
         arrangements += is_valid_placement2(record,placement,groups);
         //if(is_valid_placement2(record,placement,groups)){cout<<"V ";
 		//	for(auto&x:placement){cout<<x<<",";}cout<<endl;
-        //}
+        //
         //cout<<"Testing:"<<endl;
         //for(auto&x:placement){cout<<x<<",";}cout<<endl;
-        }
+	}
     if(visuals){cout<< arrangements << " Combinations"<<endl;}
     return arrangements;
 }
 
-long long dynamic_arrangements(string&record,vector<int>&groups){
-    cout<< record<<" | ";
-    for(auto&group:groups){cout<<group<<" ";}cout<<endl;
+string section_hash(string&record,vector<int>&groups){
+	string output = record;
+	for(auto&group:groups){output.append(" ").append(to_string(group));}
+	return output;
+}
+
+long long dynamic_arrangements(string record,vector<int>groups){
+	if(known_arrangements.count(section_hash(record,groups))){//Result is in map
+		//cout<< "Amount from map"<<endl;
+		return known_arrangements[section_hash(record,groups)];
+	}
+    //cout<< record<<" | ";
+    //for(auto&group:groups){cout<<group<<" ";}cout<<endl;
     bool contains_damaged =false;
     for(auto&x:record){if(x=='#'){contains_damaged=true;}}
     if(groups.size()==0 && !contains_damaged){
-            cout<<"Found 1"<<endl;
+            //cout<<"Found 1"<<endl;
             return 1;}
-    if(record.size()==0 ){
+    if(record.size()==0 ){//End of Record
             //cout<<"invalid"<<endl;
+            return 0;
+    }
+    int groupsum =0;
+    for(auto&group:groups){groupsum+=group;}
+    if(record.size()< groupsum+groups.size()-1 ){//Not enough space left to fill all remaining groups
+            //cout<<"Can't fit"<<endl;
             return 0;
     }
     if(record[0]=='.'){//First Position is Undamaged
@@ -152,7 +172,7 @@ long long dynamic_arrangements(string&record,vector<int>&groups){
                 }
             }else{
                 if(groups.size()==1){
-                        cout<<"Found 1"<<endl;
+                        //cout<<"Found 1"<<endl;
                         return 1;
                 }
             }
@@ -166,22 +186,35 @@ long long dynamic_arrangements(string&record,vector<int>&groups){
 
         }else{//Reduce first group by one
             string shorter = record.substr(1,record.size()-1);
+
+            if(shorter.size()>1){
+				if(shorter[0]=='.'){return 0;}
+				if(shorter[0]=='?'){
+					//Here we know that therer currently is a group being placed, and it is not done, and the next position would be a ?
+					//As a result we know that the group needs to continue.
+					shorter[0]='#';
+				}
+            }
             vector<int>&smaller_groups = groups;
             smaller_groups[0]--;
             return dynamic_arrangements(shorter,smaller_groups);
         }
-    }else{//First Position is unknown, we test both paths;
+    }else{//First Position is unknown, we test both paths and add the result of both to the unordered_map
         string c_1 = record;
         string c_2 = record;
         //Choice 1: First Pos is '#'
         c_1[0]='#';
         //Choice 1: First Pos is '.'
         c_2[0]='.';
-
         //cout<<"Splitting into:"<<endl;
         //cout<<c_1<<endl;
         //cout<<c_2<<endl<<endl;
-        return dynamic_arrangements(c_1,groups)+dynamic_arrangements(c_2,groups);
+        long long c_1_a = dynamic_arrangements(c_1,groups);
+        long long c_2_a = dynamic_arrangements(c_2,groups);
+        known_arrangements[section_hash(c_1,groups)]=c_1_a;
+        known_arrangements[section_hash(c_2,groups)]=c_2_a;
+        //cout<<c_1_a<<"+"<<c_2_a<<endl;
+        return c_1_a+c_2_a;
     }
 }
 
@@ -333,7 +366,7 @@ vector<section> split_section_by_Fored_Placements(vector<section>&input_sections
 void D_12_2(){
     static vector<string> inputvector;
     string line;
-    ifstream inputread("12-1-1.txt");
+    ifstream inputread("12-1.txt");
     while (getline (inputread, line)) {
     inputvector.push_back(line);
     }
@@ -344,7 +377,7 @@ void D_12_2(){
     //Max lenght is 20 *5 +4 = 104
 
 
-    int folds = 1;
+    int folds = 5;
     bool optimising = false;
     struct row{
 		vector<section> sections;
@@ -608,10 +641,20 @@ void D_12_2(){
         cout<<"Total arrangements:"<<irow.arrangements<<endl;
     }
 
-    int sum = 0;
+    long long sum = 0;
     for(auto&irow:rows){
         sum+=irow.arrangements;
     }
     cout<<"For "<<folds << " folds the Sum of all Rows is: "<<sum<<endl;
+
+	/*
+    auto print_key_value = [](const auto& key, const auto& value)
+    {
+        if(value){cout << "Key:[" << key << "] Value:[" << value << "]\n";}
+    };
+    for (const pair<const string, long long>& n : known_arrangements)
+        print_key_value(n.first, n.second);
+	*/
+
     return;
 }
