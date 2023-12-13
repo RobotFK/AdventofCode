@@ -5,6 +5,13 @@
 #include <algorithm>
 using namespace std;
 //FIX INPUT line 154
+
+struct section{
+    string record;
+    vector<int> groups;
+    long long arrangements = 1;
+};
+
 bool is_valid_placement2(string&record,vector<int>&placement,vector<int>&groups,bool visuals=false){
     int group_index=0;//Next or Current group that is evaluated
     for(int i=0;i!=record.size();i++){
@@ -43,8 +50,8 @@ bool is_valid_placement2(string&record,vector<int>&placement,vector<int>&groups,
     return true;
 }
 
-int arrangements(string&record,vector<int>&groups,bool visuals=false){
-    int arrangements = 0;
+long long arrangements(string&record,vector<int>&groups,bool visuals=false){
+    long long arrangements = 0;
 
     /*
     cout<<endl<<endl;
@@ -120,7 +127,208 @@ int arrangements(string&record,vector<int>&groups,bool visuals=false){
     return arrangements;
 }
 
+long long dynamic_arrangements(string&record,vector<int>&groups){
+    cout<< record<<" | ";
+    for(auto&group:groups){cout<<group<<" ";}cout<<endl;
+    bool contains_damaged =false;
+    for(auto&x:record){if(x=='#'){contains_damaged=true;}}
+    if(groups.size()==0 && !contains_damaged){
+            cout<<"Found 1"<<endl;
+            return 1;}
+    if(record.size()==0 ){
+            //cout<<"invalid"<<endl;
+            return 0;
+    }
+    if(record[0]=='.'){//First Position is Undamaged
+        string shorter = record.substr(1,record.size()-1);
+        return dynamic_arrangements(shorter,groups);
+
+    }else if(record[0]=='#'){//First Position is Damaged
+        if(groups[0]==1){//This is the last entry of a group
+            if(record.size()>1){//If we can Test Next entry
+                if(record[1]=='#'){//Can't end here
+                    //cout<<"invalid"<<endl;
+                    return 0;
+                }
+            }else{
+                if(groups.size()==1){
+                        cout<<"Found 1"<<endl;
+                        return 1;
+                }
+            }
+            //Can end here
+            string shorter = record.substr(2,record.size()-2);//Remove the first and another for the 'Cooldown'
+            vector<int>smaller_groups;
+            for(int i=1;i!=groups.size();i++){smaller_groups.push_back(groups[i]);}
+            //cout<<"-> ";
+            //for(int i=0;i!=smaller_groups.size();i++){cout<<smaller_groups[i]<<" ";}cout<<endl;
+            return dynamic_arrangements(shorter,smaller_groups);
+
+        }else{//Reduce first group by one
+            string shorter = record.substr(1,record.size()-1);
+            vector<int>&smaller_groups = groups;
+            smaller_groups[0]--;
+            return dynamic_arrangements(shorter,smaller_groups);
+        }
+    }else{//First Position is unknown, we test both paths;
+        string c_1 = record;
+        string c_2 = record;
+        //Choice 1: First Pos is '#'
+        c_1[0]='#';
+        //Choice 1: First Pos is '.'
+        c_2[0]='.';
+
+        //cout<<"Splitting into:"<<endl;
+        //cout<<c_1<<endl;
+        //cout<<c_2<<endl<<endl;
+        return dynamic_arrangements(c_1,groups)+dynamic_arrangements(c_2,groups);
+    }
+}
+
+string trim_ends(string&input,char trimchar){
+    int start=0;
+    int send=input.size();
+    for(auto&ichar:input){
+        if(ichar==trimchar){start++;}
+        else{break;}
+    }
+    for(int i=input.size()-1;i>=start;i--){
+        if(input[i]==trimchar){send--;}
+        else{break;}
+    }
+    return input.substr(start,send-start);
+}
+
+string trim_negative_space(string&input,char trimchar){
+    string newstring;
+    //cout <<"Trim"<<input<<endl;
+    for(int i=0;i<input.size();i++){
+        //cout<<endl<<input[i]<<"["<<i<<"]";
+        if(input[i]==trimchar){//Section starts with trimchar
+            int j=1;
+            for(;j<=input.size()-i-1;j++){
+                //cout<<"+"<<j<<"="<<input[i+j]<<endl;
+                if(input[i+j]!=trimchar){break;}
+            }
+            if(j-1>0){
+                //cout<<"Skipping "<<j-1<<" Chars"<<endl;
+                i+=(j-1);
+            }
+        }
+        newstring+=input[i];
+    }
+    //cout<< "Done Trimmming"<<endl;
+    return newstring;
+}
 //void display_placement(string&record,vector<int>placement,vector<int> groups){
+
+//O_1
+vector<vector<int>>find_force_placement_by_boxed_space(vector<section>&input_sections,bool visuals=false);
+
+
+//O_2
+
+vector<section> minimise_unary_groups(vector<section>&input_sections,bool visuals=false){
+    vector<section> new_sections;
+    for(int isection=0;isection!=input_sections.size();isection++){
+        vector<int> spaces_i;//Starting index of the matching spaces
+        vector<int> groups =input_sections[isection].groups;
+        bool unary_groups = true;
+        for(auto&group:groups){if(group!=groups[0]){unary_groups=false;}}
+        if(!unary_groups){//Remove all Sections not fitting into the Criteria
+                new_sections.push_back(input_sections[isection]);
+                continue;
+        }
+
+        int unbroken_len = 0;
+        for(int i=0;i!=input_sections[isection].record.size();i++){
+            if(input_sections[isection].record[i]!='#'){
+                if(unbroken_len!=0){spaces_i.push_back(i-1);}
+                unbroken_len = 0;
+                }else{unbroken_len++;}
+        }
+
+        section new_section;
+        int last_r_cut=0;
+        //cout << input_sections[isection].record<<endl;
+        for(auto&index:spaces_i){
+                if(visuals){cout<<"Space deleted at i:"<<index<<endl;}
+                new_section.record.append(input_sections[isection].record.substr(last_r_cut,index-last_r_cut));
+                last_r_cut=index+groups[0]+1;
+                new_section.groups.push_back(groups[0]);
+        }
+        new_sections.push_back(new_section);
+    }
+    return new_sections;
+}
+
+vector<section> split_section_by_Fored_Placements(vector<section>&input_sections,vector<vector<int>>&F_placement,bool visuals=false){
+    vector<section> new_sections;
+    for(int isection=0;isection!=input_sections.size();isection++){
+        bool section_improvements=false;
+        for(int i=0;i!=F_placement[isection].size();i++){
+            if(visuals){cout<<F_placement[isection][i]<<" ^ ";}
+            if(F_placement[isection][i]!=-1){section_improvements=true;}
+        }if(visuals){cout<<endl;}
+		if(!section_improvements){//No Splitting possible
+            new_sections.push_back(input_sections[isection]);
+		    continue;
+        }
+
+		int last_r_cut = 0;//last Cut of the Record that is gone
+        int last_g_cut = 0;//last Cut of the Groups that is gone
+        int index_F_placement=0;
+        int lengt = F_placement[isection].size();
+        for(;index_F_placement!=F_placement[isection].size();index_F_placement++){
+            //This loop only creates the New section out of the Content bevore the cut
+            int index= F_placement[isection][index_F_placement];//Index in the Record of where the Forced Group starts
+            if(index ==-1){continue;}//No Forced start
+            if(index == 0){//Group touches the left Edge, no Section created, only last_r_cut  and last_g_cut increased
+                last_r_cut=index+input_sections[isection].groups[index_F_placement];
+                last_g_cut++;
+                continue;
+            }
+            if(last_r_cut == input_sections[isection].record.size()){ //Group touches the right Edge
+					//cout<<"Clean R end"<<endl;
+					break;
+            }
+				if(last_g_cut == input_sections[isection].groups.size()){ //No groups left
+					//cout<<"Clean G end"<<endl;
+					break;
+            }
+                if(last_g_cut==index_F_placement){//Section would contain no groups it is skipped
+                    continue;
+            }
+            section new_section;
+            for(int i=last_g_cut;i!=index_F_placement;i++){//Copy groups
+                new_section.groups.push_back(input_sections[isection].groups[i]);
+            }
+            last_g_cut = index_F_placement+1;//Increments the Group cut, as we can exclude it;
+            new_section.record = input_sections[isection].record.substr(last_r_cut,index-last_r_cut);
+            new_section.record = trim_ends(new_section.record,'.');
+            new_section.record = trim_negative_space(new_section.record,'.');
+            last_r_cut=index+input_sections[isection].groups[index_F_placement]+1;
+            new_sections.push_back(new_section);
+        }
+
+        //Fill the rest into an additional Section
+        if(last_r_cut != input_sections[isection].record.size()&&last_g_cut != input_sections[isection].groups.size()){
+            //cout<<"Leftover cut starting  "<< last_r_cut<<"/G:"<<last_g_cut <<endl;
+            section new_section;
+            for(int i=last_g_cut;i!=input_sections[isection].groups.size();i++){//Copy groups
+                new_section.groups.push_back(input_sections[isection].groups[i]);
+            }
+            new_section.record = input_sections[isection].record.substr(last_r_cut,input_sections[isection].record.size()-last_r_cut);
+            new_section.record = trim_ends(new_section.record,'.');
+            //for(auto&x:new_section.groups){cout<< x<< ",";}cout<<endl;
+            new_sections.push_back(new_section);
+        }
+    }
+    if(new_sections.size()<input_sections.size()){cout<<input_sections.size()-new_sections.size()<<" Sections lost error"<<endl;}
+    //if(new_sections.size()==input_sections.size()){cout<<"No splitting by F_placement"<<endl;}
+    return new_sections;
+}
+
 
 void D_12_2(){
     static vector<string> inputvector;
@@ -131,18 +339,16 @@ void D_12_2(){
     }
     cout << "Read input of "<<inputvector.size() << " Lines" << endl;
 
-    //Essentially just Nonogramms
-    int folds = 5;
-    bool optimising = true;
+    //Essentially just Nonogramms, but this also means that the task is NP hard :(
 
-    struct section{
-    	string record;
-    	vector<int> groups;
-    	int arrangements = 1;
-    };
+    //Max lenght is 20 *5 +4 = 104
+
+
+    int folds = 1;
+    bool optimising = false;
     struct row{
 		vector<section> sections;
-		int arrangements = 1;
+		long long arrangements = 1;
     };
     vector<row> rows;
     for(int i =0;i != inputvector.size();i++){
@@ -170,7 +376,7 @@ void D_12_2(){
     int optimised =0;
     int completed_rows=0;
     for(auto&irow:rows){//For each row
-		cout<<"Optimising Row "<<++completed_rows<<endl;
+		//cout<<"Optimising Row "<<++completed_rows<<endl;
 
         vector<vector<int>>F_placement;//List of Entries where Placements are forced;
 		for(auto&isection:irow.sections){//For each section we create a dummy to write Forced Placements in
@@ -179,6 +385,10 @@ void D_12_2(){
 		}
 		optimise_1:;
 		//Our first step is trying to split the Full Record into sections that have a set border group (the group needs to be place at the specific index)
+        /*for(int section=0;section!=irow.sections.size();section++){
+		vector<vector<int>>O_1_F_placement = F_placement;
+		O_1_F_placement = find_force_placement_by_boxed_space(irow.sections);
+        }*/
         for(int section=0;section!=irow.sections.size();section++){//For each section
             vector<int> spaces;
             vector<int> groups =irow.sections[section].groups;
@@ -244,7 +454,7 @@ void D_12_2(){
             //cout<<"Finding Group indexes"<<endl;
             for(int ifilling_indexes=0;ifilling_indexes!=filling.size();ifilling_indexes++){//For each filling
 				int Forced_index=filling_indexes[ifilling_indexes];//Ugly, i know
-				cout<< "Forced_index="<<Forced_index<<" ";
+				//cout<< "Forced_index="<<Forced_index<<" ";
 				//cout<<"Size:"<<groups[0]<<endl;
 				int found_folds=0;
 				int g_i  = -1;
@@ -264,7 +474,7 @@ void D_12_2(){
         }
 
         optimise_2:;
-        cout<<"optimisation type 2"<<endl;
+        //cout<<"optimisation type 2"<<endl;
         //Secondly we find it there is a space that forces a specific group by the amount of connected damaged springs
         for(int isection=0;isection!=irow.sections.size();isection++){//For each section
 			vector<int> spaces;
@@ -289,7 +499,7 @@ void D_12_2(){
 
 			//Bonus optimisation: if the largest group has a space that is fully fills,every space of that size gets walled of
 			if(groups[0]==spaces[0]){
-				cout<<"Bonus optimisation"<<endl;
+				//cout<<"Bonus optimisation"<<endl;
 				unbroken_len = 0;
 				for(int i=0;i!=irow.sections[isection].record.size();i++){
 					if(irow.sections[isection].record[i]!='#'){//End of Space
@@ -303,15 +513,15 @@ void D_12_2(){
 				}
 			}//End of Bonus optimisation
 
-			for(auto&space:spaces){cout<<space<<",";}cout<<endl;
-            for(auto&group:groups){cout<<group<<",";}cout<<endl;
+			//for(auto&space:spaces){cout<<space<<",";}cout<<endl;
+            //for(auto&group:groups){cout<<group<<",";}cout<<endl;
 			vector<int> filling;
             for(int space_i=0;space_i!=spaces.size();space_i++){
                 if(space_i==folds){
 						if(space_i+1<spaces.size()){//Not the last
 							if(groups[space_i+1]==groups[space_i]){//Next group could fill the hole fully aswell
 								//Todo: Add check to mitigate false alarms
-								cout<<"decision_paralysis(2)"<<endl;
+								//cout<<"decision_paralysis(2)"<<endl;
 								goto optimise_3;
 							}
 						}
@@ -334,9 +544,9 @@ void D_12_2(){
 			}
 			if(unbroken_len!=0){filling_indexes.push_back(irow.sections[isection].record.size()-filling[0]);}//Group Touches the end
 
-			cout<<endl;
-			for(auto&x:filling){cout<<x<<" ";}cout<<endl;
-			for(auto&x:filling_indexes){cout<<x<<" ";}cout<<endl;
+			//cout<<endl;
+			//for(auto&x:filling){cout<<x<<" ";}cout<<endl;
+			//for(auto&x:filling_indexes){cout<<x<<" ";}cout<<endl;
 
 			for(int ifilling_indexes=0;ifilling_indexes!=filling.size();ifilling_indexes++){//For each filling
 				int Forced_index=filling_indexes[ifilling_indexes];//Ugly, i know
@@ -356,100 +566,44 @@ void D_12_2(){
 						}else{found_folds++;}
 					}
 				}
-				irow.sections[isection].record[filling_indexes[ifilling_indexes]-1]='.';//WARNING this is a extremly volatile operation and a sign of stress, this forces the spot before the first spring of the group to be '.'
+				irow.sections[isection].record[filling_indexes[ifilling_indexes]-1]='.';//WARNING This is a volatile operation as this forces the spot before the first spring of the group to be '.'
 				//cout<<g_i <<". (2)Group at index: "<<filling_indexes[ifilling_indexes]<<endl;
 			}
             //cout<<endl;
         }
 
-        optimise_3:;
+        optimise_3:;//Made Due to input154
+
+
+        //If all groups are of the same size, and there are Spaces of exactly this size we remove theses sections
+        irow.sections = minimise_unary_groups(irow.sections);;
 
 		split_section:;
-        //Finally, We count the Optimisations and Split the sections:
-        vector<section> new_sections;
-        bool row_improvements=false;
-		for(int isection=0;isection!=irow.sections.size();isection++){
-			bool section_improvements=false;
-			for(auto&x:F_placement[isection]){
-				//cout<<x<<" ^ ";
-				if(x!=-1){
-					section_improvements=true;}
-			}//cout<<endl;
-			if(section_improvements){
-				row_improvements=true;
-				optimised++;//For Statistics
-			}else{//This section has not been Optimised and is just added to the vector of sections unchanged
-				//cout<<"skipping section"<<endl;
-				new_sections.push_back(irow.sections[isection]);
-				continue;
-			}
 
-			//cout<<endl;
-			//cout<< irow.sections[isection].record<<endl;
-			//cout<<"Size:"<< irow.sections[isection].record.size()<<endl;
-			int last_r_cut = 0;//last Cut of the Record that is gone
-			int last_g_cut = 0;//last Cut of the Groups that is gone
-			int index_F_placement=0;
-			for(;index_F_placement!=F_placement[isection].size();index_F_placement++){
-				//This loop only creates the New section BEFORE the cut
-				int index= F_placement[isection][index_F_placement];//Index in the Record of where the Forced Group starts
-				//cout<<"index="<<index<<endl;
-				if(index ==-1){continue;}//No Forced start
-				if(index == 0){//Group touches the left Edge, no Section created, only last_r_cut  and last_g_cut increased
-					//cout<<"Skipped has len of "<<irow.sections[isection].groups[index_F_placement]<<endl;
-					last_r_cut=index+irow.sections[isection].groups[index_F_placement];
-					last_g_cut++;
-					continue;
-				}
-				if(last_r_cut == irow.sections[isection].record.size()){ //Group touches the right Edge
-					//cout<<"Clean R end"<<endl;
-					break;
-				}
-				if(last_g_cut == irow.sections[isection].groups.size()){ //No groups left
-					//cout<<"Clean G end"<<endl;
-					break;
-				}
-				section new_section;
-				for(int i=last_g_cut;i!=index_F_placement;i++){//Copy groups
-					new_section.groups.push_back(irow.sections[isection].groups[i]);
-				}
-				last_g_cut = index_F_placement+1;
-				//cout<<"Record section:"<<last_r_cut <<","<<index-last_r_cut<<endl;
-				new_section.record = irow.sections[isection].record.substr(last_r_cut,index-last_r_cut);
-				//cout<<new_section.record<<"|";
-				//for(auto&x:new_section.groups){cout<<x<<" ";}cout<<endl;
-				last_r_cut=index+irow.sections[isection].groups[index_F_placement]+1;
-				new_sections.push_back(new_section);
-				//cout<<"Added new section"<<endl;
-			}
+		//cout<<"Splitting Row "<<completed_rows<<endl;
+		//cout<<"Splitting "<< irow.sections.size()<<"Rows;";
+        irow.sections = split_section_by_Fored_Placements(irow.sections,F_placement);
 
-			//Fill the rest into another Section
-			if(last_r_cut != irow.sections[isection].record.size()&&last_g_cut != irow.sections[isection].groups.size()){
-				//cout<<"Leftover cut starting  "<< last_r_cut<<"/G:"<<last_g_cut <<endl;
-				section new_section;
-				for(int i=last_g_cut;i!=irow.sections[isection].groups.size();i++){//Copy groups
-					new_section.groups.push_back(irow.sections[isection].groups[i]);
-				}
-				new_section.record = irow.sections[isection].record.substr(last_r_cut,irow.sections[isection].record.size()-last_r_cut);
-				//for(auto&x:new_section.groups){cout<< x<< ",";}cout<<endl;
-				new_sections.push_back(new_section);
-			}
+
+        //Can only be done after the split as it would otherwise mess up the set indexes of F_placement
+        //cout<<"Trimming "<< irow.sections.size() <<" Rows id: "<<completed_rows<<endl;
+        for(auto&isection:irow.sections){
+            isection.record = trim_negative_space(isection.record,'.');
         }
-        if(irow.sections.size()>new_sections.size()){cout<<irow.sections.size()-new_sections.size()<<" Sections lost error"<<endl;}
-        //else{cout<<"Expanded to "<<new_sections.size()<<endl;}
-		irow.sections = new_sections;
     }
 
     }
     //return;
 
 	cout<<"Calculating arrangements:"<<endl;
+	int row=1;
     for(auto&irow:rows){
-		//cout<<"New Row"<<endl;
+		//cout<<"New Row"<<row++<<endl;
         for(int section=0;section!=irow.sections.size();section++){
-            for(auto&sect:irow.sections[section].record){cout<<sect;}cout<<"| ";
-            for(auto&group:irow.sections[section].groups){cout<<group<<" ";}cout<<endl;
-            irow.arrangements*=arrangements(irow.sections[section].record,irow.sections[section].groups);
+            //for(auto&sect:irow.sections[section].record){cout<<sect;}cout<<" | ";
+            //for(auto&group:irow.sections[section].groups){cout<<group<<" ";}cout<<endl;
+            irow.arrangements*=dynamic_arrangements(irow.sections[section].record,irow.sections[section].groups);
+
         }
         cout<<"Total arrangements:"<<irow.arrangements<<endl;
     }
@@ -461,15 +615,3 @@ void D_12_2(){
     cout<<"For "<<folds << " folds the Sum of all Rows is: "<<sum<<endl;
     return;
 }
-//Too low 6785
-
-
-
-
-
-
-
-
-
-
-
