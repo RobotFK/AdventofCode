@@ -19,7 +19,7 @@ bool sortbyx(const transition &a, const transition &b)
 void D_18_2(){
     static vector<string> inputvector;
     string line;
-    ifstream inputread("18-1-2.txt");
+    ifstream inputread("18-1.txt");
     while (getline (inputread, line)) {
     inputvector.push_back(line);
     }
@@ -30,7 +30,7 @@ void D_18_2(){
     };
     vector<dig> digs;
 
-    bool day_2 = false;
+    bool day_2 = true;
     if(day_2){
         for(auto&line:inputvector){
             dig newdig;
@@ -100,9 +100,6 @@ void D_18_2(){
     int start_y= -1*min_y;
 
     cout<<"Start: "<<start_x<< " - "<<start_y<<endl;
-
-    //return;
-
 
     struct corner{
     int x;
@@ -243,32 +240,33 @@ void D_18_2(){
         sort(transitions.begin(),transitions.end(),sortbyx);
         bool inside=false;
         bool wall=false;
+        char entry_symbol;
+        int last_add=-1;
         long rowsum=0;
         for(int itran=0;itran!=transitions.size();itran++){
-            cout<<transitions[itran].type<<" ";
-            if(inside){
-                cout<<transitions[itran-1].x<< "-" <<transitions[itran].x<<"  ";
-                rowsum+=(transitions[itran].x-transitions[itran-1].x);
-            }else if(wall){
-                cout<<"W" <<transitions[itran-1].x<< "-" <<transitions[itran].x<<"  ";
-                rowsum+=(transitions[itran].x-transitions[itran-1].x);
+            //cout<<" I:"<<itran<<" "<<transitions[itran].type<<" vs "<<itran<<endl ;
+            if(inside||wall){
+				if(last_add==itran-1){rowsum--;}
+                //cout<<transitions[itran-1].x<< "-" <<transitions[itran].x<<" ="<<(transitions[itran].x-transitions[itran-1].x)+1<<endl;
+                rowsum+=(transitions[itran].x-transitions[itran-1].x)+1;
+                last_add=itran;
             }
-
             if(transitions[itran].type == 'I'){
                 inside=!inside;
-                //if(inside==true){rowsum++;}
-                continue;
-            }
-            if(transitions[itran].type == '/'){
-                if(!wall){inside=!inside;wall=true;}
-                else{wall=false;}
-            }
-            if(transitions[itran].type == '\\'){
-                if(wall){inside=!inside;wall=false;}
-                else{wall=true;}
+            }else{// A '/' or a '\'
+                if(wall==false){//If we are not in a wall
+					wall=true;//We enter one now
+					entry_symbol=transitions[itran].type;//And record the entry symbol to determine the exit later
+                }else{//We are in a wall and need to decide if we leave inside with it
+					if(entry_symbol==transitions[itran].type){// IF this was a '//' or a '\\' section,it does indicate a change between out and in
+						inside=!inside;
+					}
+					wall=false;
+                }
+
             }
         }
-        cout<<endl<< "Row "<<row<<" ="<<rowsum<<endl;
+        cout<< "Row "<<row<<" ="<<rowsum<<endl;
         sum+=rowsum;
         if(irow==row_with_corners.size()-1){continue;}//Last row, does not have any rows after it
         if((row_with_corners[irow+1]-row_with_corners[irow])>1){
