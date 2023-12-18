@@ -89,6 +89,8 @@ bool pos_in_list(vector<pos>&testlist,pos&testpos){
 	return false;
 }
 
+
+
 int min_heat_A_starv1_1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<int>>&city,bool visualsise=false){
 	vector<pos> openlist;
 	vector<vector<vector<pos>>> closedlist_city;
@@ -244,33 +246,20 @@ int min_heat_A_starv1_1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vecto
 	return min_heat;
 }
 
-int min_heat_A_starv1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<int>>&city,bool visualsise=false){
-
+int min_heat_A_starv2(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<int>>&city,bool visualsise=false){
 	vector<pos> openlist;
-	vector<pos> closedlist;
+	unordered_map<string,int>closedlist;
 
 	int max_heat = city.size()*city[0].size()*10;
 	int max_travel = 3;
-	struct d_heat{//lowest heatloss, based on direction
-		vector<int> n;
-		vector<int> e;
-		vector<int> s;
-		vector<int> w;
-	};
-	vector<vector<d_heat>>d_heat_city;
-	for(auto&i:city){
-			vector<d_heat>new_cityrow;
+
+	for(auto&i:city){//Construct closed lists
+		vector<vector<pos>>new_closedlistrow;
 		for(auto&j:city){
-			d_heat new_d_heat;
-			for(int k=0;k!=max_travel;k++){
-				new_d_heat.n.push_back(max_heat);
-				new_d_heat.e.push_back(max_heat);
-				new_d_heat.s.push_back(max_heat);
-				new_d_heat.w.push_back(max_heat);
-			}
-			new_cityrow.push_back(new_d_heat);
+			vector<pos> closedlist;
+			new_closedlistrow.push_back(closedlist);
 		}
-		d_heat_city.push_back(new_cityrow);
+		closedlist_city.push_back(new_closedlistrow);
 	}
 
 	pos start;
@@ -282,20 +271,21 @@ int min_heat_A_starv1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<
 	int min_heat=city.size()*city[0].size()*10;
 	bool path_found = false;
 	int rem_dist= end_x-start_x +end_y-start_y;
-
+	int heat_lead=rem_dist*10;
 	while(openlist.size()!=0){
 		int positions=openlist.size();
 		if(visualsise){
-			//cout<<endl<<"Expanding "<<openlist.size()<<" positions"<<endl;
+			cout<<endl<<"Expanding "<<openlist.size()<<" positions"<<endl;
 			//cout<<closedlist.size()<<" Dead"<<endl;
-			if(rem_dist!=0){cout<<rem_dist<<" to go"<<endl;}
-			/*if(closedlist.size()>6){
-				for(auto&ipos:openlist){
-					if(ipos.x!=2 ||ipos.y!=1){continue;}
-					cout<<"O "<< ipos.x<<","<<ipos.y<<" "<<ipos.last<<":"<<ipos.moved<<" c:"<<ipos.cost<<endl;
-				}
-				//return -1;
-			}*/
+			if(rem_dist!=0){cout<<rem_dist<<" to go ("<< heat_lead<<")"<<endl;}
+			if(rem_dist<1){
+				cout<<"Closed points:"<<endl;
+				for(auto&i:closedlist_city){
+					for(auto&j:i){
+						cout<<j.size();
+					}cout<<endl;
+				}cout<<endl;
+			}
 		}
 
 		vector<pos> nextlist;
@@ -313,17 +303,26 @@ int min_heat_A_starv1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<
 				continue;
 			}
 
-			//Skip path if it is worse than a known solution
-			if(path_found && min_heat<cur_pos.cost){continue;}
+
+			if(path_found){
+				if(min_heat<cur_pos.cost){continue;}//Skip path if it is worse than a known solution
+				if(min_heat<cur_pos.cost){continue;}
+			}else{
+				int temperature=10;//How much detour we allow
+				if(heat_lead+temperature<cur_pos.cost){cout<<"Too slow";continue;}
+			}
 			if(end_x==cur_pos.x&&end_y==cur_pos.y){
 				cout<<"Reached end"<<endl;
 				if(min_heat>cur_pos.cost){
-					min_heat=cur_pos.cost;
+					heat_lead=cur_pos.cost;
 					path_found=true;
 				}
 			}
 
-			if(end_x-cur_pos.x+end_y-cur_pos.y < rem_dist){rem_dist=end_x-cur_pos.x+end_y-cur_pos.y;}
+			if(end_x-cur_pos.x+end_y-cur_pos.y < rem_dist){
+					rem_dist=end_x-cur_pos.x+end_y-cur_pos.y;//Update shortest dist
+					heat_lead=cur_pos.cost;
+			}
 
 			//cout<<"O "<< cur_pos.x<<","<<cur_pos.y<<" "<<cur_pos.last<<":"<<cur_pos.moved<<" c:"<<cur_pos.cost<<endl;
 			if(cur_pos.y != 0 && !(cur_pos.last == 'n' && cur_pos.moved == 3)&& cur_pos.last != 's'){//Move North
@@ -333,7 +332,7 @@ int min_heat_A_starv1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<
 				newpos.last = 'n';
 				if(cur_pos.last == 'n'){newpos.moved=cur_pos.moved+1;}
 				newpos.cost = cur_pos.cost + city[newpos.y][newpos.x];
-				if(!pos_in_list(closedlist,newpos)&&!pos_in_list(nextlist,newpos)){
+				if(!pos_in_list(closedlist_city[newpos.y][newpos.x],newpos)&&!pos_in_list(nextlist,newpos)){
 					if(update_list(nextlist,newpos)){
 						//cout<<"N,";
 					}
@@ -346,7 +345,7 @@ int min_heat_A_starv1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<
 				newpos.last = 'e';
 				if(cur_pos.last == 'e'){newpos.moved=cur_pos.moved+1;}
 				newpos.cost = cur_pos.cost + city[newpos.y][newpos.x];
-				if(!pos_in_list(closedlist,newpos)&&!pos_in_list(nextlist,newpos)){
+				if(!pos_in_list(closedlist_city[newpos.y][newpos.x],newpos)&&!pos_in_list(nextlist,newpos)){
 					if(update_list(nextlist,newpos)){
 						//cout<<"E,";
 					}
@@ -359,7 +358,7 @@ int min_heat_A_starv1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<
 				newpos.last = 's';
 				if(cur_pos.last == 's'){newpos.moved=cur_pos.moved+1;}
 				newpos.cost = cur_pos.cost + city[newpos.y][newpos.x];
-				if(!pos_in_list(closedlist,newpos)&&!pos_in_list(nextlist,newpos)){
+				if(!pos_in_list(closedlist_city[newpos.y][newpos.x],newpos)&&!pos_in_list(nextlist,newpos)){
 					if(update_list(nextlist,newpos)){
 						//cout<<"S,";
 					}
@@ -372,25 +371,25 @@ int min_heat_A_starv1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<
 				newpos.last = 'w';
 				if(cur_pos.last == 'w'){newpos.moved=cur_pos.moved+1;}
 				newpos.cost = cur_pos.cost + city[newpos.y][newpos.x];
-				if(!pos_in_list(closedlist,newpos)){
+				if(!pos_in_list(closedlist_city[newpos.y][newpos.x],newpos)){
 					if(update_list(nextlist,newpos)){
 						//cout<<"W,";
 					}
 				}
 			}
-			if(!pos_in_list(closedlist,cur_pos)){
-				update_list(closedlist,cur_pos);
+			if(!pos_in_list(closedlist_city[cur_pos.x][cur_pos.y],cur_pos)){
+				update_list(closedlist_city[cur_pos.x][cur_pos.y],cur_pos);
 			}
 
 		}
 		openlist = nextlist;
 		//cout<<"Pre rem";
-		closedlist = remove_duplicates(closedlist);
+		//closedlist_city[cur_pos.x][cur_pos.y] = remove_duplicates(closedlist_city[cur_pos.x][cur_pos.y]);
 		//cout<<"Post rem";
 
 	}
 	//int min_heat=city.size()*city[0].size()*10;
-	for(auto&ipos:closedlist){
+	for(auto&ipos:closedlist_city[end_y][end_x]){
 		if(ipos.x <end_x-1 ||ipos.y <end_y-1){continue;}
 		cout<<" "<< ipos.x<<","<<ipos.y<< " "<<ipos.last<<": "<<ipos.moved<<" c:"<<ipos.cost<<endl;
 		if(ipos.x !=end_x ||ipos.y !=end_y){continue;}
@@ -402,145 +401,8 @@ int min_heat_A_starv1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<
 	return min_heat;
 }
 
-int min_heat_A_starv0(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<int>>&city,bool visualsise=false){
 
-	vector<pos> openlist;
-	vector<pos> closedlist;
 
-	int max_heat = city.size()*city[0].size()*10;
-	int max_travel = 3;
-	struct d_heat{//lowest heatloss, based on direction
-		vector<int> n;
-		vector<int> e;
-		vector<int> s;
-		vector<int> w;
-	};
-	vector<vector<d_heat>>d_heat_city;
-	for(auto&i:city){
-			vector<d_heat>new_cityrow;
-		for(auto&j:city){
-			d_heat new_d_heat;
-			for(int k=0;k!=max_travel;k++){
-				new_d_heat.n.push_back(max_heat);
-				new_d_heat.e.push_back(max_heat);
-				new_d_heat.s.push_back(max_heat);
-				new_d_heat.w.push_back(max_heat);
-			}
-			new_cityrow.push_back(new_d_heat);
-		}
-		d_heat_city.push_back(new_cityrow);
-	}
-
-	pos start;
-	start.x=start_x;
-	start.y=start_y;
-	start.moved=0;
-	openlist.push_back(start);
-
-	while(openlist.size()!=0){
-		int positions=openlist.size();
-		if(visualsise){
-			cout<<endl<<"Expanding "<<openlist.size()<<" positions"<<endl;
-			cout<<closedlist.size()<<" Dead"<<endl;
-			if(closedlist.size()>6){
-				for(auto&ipos:openlist){
-					if(ipos.x!=2 ||ipos.y!=1){continue;}
-					cout<<"O "<< ipos.x<<","<<ipos.y<<" "<<ipos.last<<":"<<ipos.moved<<" c:"<<ipos.cost<<endl;
-				}
-				//return -1;
-			}
-		}
-
-		vector<pos> nextlist;
-
-		//Now we only
-
-		for(int i=0;i!=openlist.size();i++){
-			bool duplicate =false;
-			pos&cur_pos=openlist[i];
-			for(int j=i+1;j!=openlist.size();j++){
-				if(cur_pos.x==openlist[j].x && cur_pos.y==openlist[j].y && cur_pos.last==openlist[j].last && cur_pos.moved>=openlist[j].moved && cur_pos.cost>=openlist[j].cost){
-					duplicate=true;
-				}
-			}
-			if(duplicate){
-				//cout<<"Duplicate"<<endl;
-				continue;
-			}
-			//cout<<"O "<< cur_pos.x<<","<<cur_pos.y<<" "<<cur_pos.last<<":"<<cur_pos.moved<<" c:"<<cur_pos.cost<<endl;
-			if(cur_pos.y != 0 && !(cur_pos.last == 'n' && cur_pos.moved == 3)&& cur_pos.last != 's'){//Move North
-				pos newpos;
-				newpos.x = cur_pos.x;
-				newpos.y = cur_pos.y-1;
-				newpos.last = 'n';
-				if(cur_pos.last == 'n'){newpos.moved=cur_pos.moved+1;}
-				newpos.cost = cur_pos.cost + city[newpos.y][newpos.x];
-				if(!pos_in_list(closedlist,newpos)&&!pos_in_list(nextlist,newpos)){
-					if(update_list(nextlist,newpos)){
-						//cout<<"N,";
-					}
-				}
-			}
-			if(cur_pos.x != city[0].size()-1 && !(cur_pos.last == 'e' && cur_pos.moved == 3)&& cur_pos.last != 'w'){//Move East
-				pos newpos;
-				newpos.x = cur_pos.x+1;
-				newpos.y = cur_pos.y;
-				newpos.last = 'e';
-				if(cur_pos.last == 'e'){newpos.moved=cur_pos.moved+1;}
-				newpos.cost = cur_pos.cost + city[newpos.y][newpos.x];
-				if(!pos_in_list(closedlist,newpos)&&!pos_in_list(nextlist,newpos)){
-					if(update_list(nextlist,newpos)){
-						//cout<<"E,";
-					}
-				}
-			}
-			if(cur_pos.y != city.size()-1 && !(cur_pos.last == 's' && cur_pos.moved == 3)&& cur_pos.last != 'n'){//Move South
-				pos newpos;
-				newpos.x = cur_pos.x;
-				newpos.y = cur_pos.y+1;
-				newpos.last = 's';
-				if(cur_pos.last == 's'){newpos.moved=cur_pos.moved+1;}
-				newpos.cost = cur_pos.cost + city[newpos.y][newpos.x];
-				if(!pos_in_list(closedlist,newpos)&&!pos_in_list(nextlist,newpos)){
-					if(update_list(nextlist,newpos,true)){
-						//cout<<"S,";
-					}
-				}
-			}
-			if(cur_pos.x != 0 && !(cur_pos.last == 'w' && cur_pos.moved == 3)&& cur_pos.last != 'e'){//Move West
-				pos newpos;
-				newpos.x = cur_pos.x-1;
-				newpos.y = cur_pos.y;
-				newpos.last = 'w';
-				if(cur_pos.last == 'w'){newpos.moved=cur_pos.moved+1;}
-				newpos.cost = cur_pos.cost + city[newpos.y][newpos.x];
-				if(!pos_in_list(closedlist,newpos)){
-					if(update_list(nextlist,newpos)){
-						//cout<<"W,";
-					}
-				}
-			}
-			if(!pos_in_list(closedlist,cur_pos)){
-				update_list(closedlist,cur_pos);
-			}
-		}
-		//openlist= remove_duplicates(nextlist);
-		openlist = nextlist;
-		closedlist = remove_duplicates(closedlist);
-
-	}
-	int min_heat=city.size()*city[0].size()*10;
-	for(auto&ipos:closedlist){
-		cout<<" "<< ipos.x<<","<<ipos.y<< " "<<ipos.last<<": "<<ipos.moved<<" c:"<<ipos.cost<<endl;
-		if(ipos.x !=end_x ||ipos.y !=end_y){continue;}
-		if(min_heat>=ipos.cost){
-			if(visualsise){cout<<"G: "<< ipos.x<<","<<ipos.y<< " "<<ipos.last<<": "<<ipos.moved<<" c:"<<ipos.cost<<endl;}
-			min_heat=ipos.cost;
-		}
-	}
-
-	return min_heat;
-}
 
 void D_17_1(){
     static vector<string> inputvector;
@@ -564,7 +426,7 @@ void D_17_1(){
 	cout<<city[0].size();
 	int end_x=city[0].size()-1;
 	int end_y=city.size()-1;
-	int min_heat = min_heat_A_starv1_1(start_x,start_y,end_x,end_y,city,true);
+	int min_heat = min_heat_A_starv2(start_x,start_y,end_x,end_y,city,true);
 	cout<< "Min_heat loss is "<<min_heat<<endl;
 
     return;
