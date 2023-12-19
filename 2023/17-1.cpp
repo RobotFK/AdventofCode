@@ -246,6 +246,7 @@ int min_heat_A_starv1_1(int&start_x,int&start_y,int&end_x,int&end_y,vector<vecto
 	return min_heat;
 }
 
+/*
 int min_heat_A_starv2(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<int>>&city,bool visualsise=false){
 	vector<pos> openlist;
 	unordered_map<string,int>closedlist;
@@ -401,7 +402,7 @@ int min_heat_A_starv2(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<
 	return min_heat;
 }
 
-
+*/
 
 
 void D_17_1(){
@@ -426,7 +427,7 @@ void D_17_1(){
 	cout<<city[0].size();
 	int end_x=city[0].size()-1;
 	int end_y=city.size()-1;
-	int min_heat = min_heat_A_starv2(start_x,start_y,end_x,end_y,city,true);
+	int min_heat = min_heat_A_starv1_1(start_x,start_y,end_x,end_y,city,true);
 	cout<< "Min_heat loss is "<<min_heat<<endl;
 
     return;
