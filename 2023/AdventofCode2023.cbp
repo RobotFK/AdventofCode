@@ -52,6 +52,10 @@
 		<Unit filename="17-2.cpp" />
 		<Unit filename="18-1.cpp" />
 		<Unit filename="18-2.cpp" />
+		<Unit filename="19-1.cpp" />
+		<Unit filename="19-2.cpp" />
+		<Unit filename="20-1.cpp" />
+		<Unit filename="20-2.cpp" />
 		<Unit filename="days.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="tools.cpp" />

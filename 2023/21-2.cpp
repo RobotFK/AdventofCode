@@ -30,7 +30,7 @@ string G_pos_hash2(pos&cur_pos){
 
 vector<vector<int>> garden_plot_choices={{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0}};
 
-int garden_d_algo2(const int&start_x,const int&start_y,vector<vector<bool>>&city,int total_steps,bool visualsise=false){
+void garden_big_d_algo(const int&start_x,const int&start_y,vector<vector<bool>>&city,bool visualsise=false){
 
 	unordered_map<string,int> closed_list;
 	queue<pos> openlist;
@@ -38,10 +38,12 @@ int garden_d_algo2(const int&start_x,const int&start_y,vector<vector<bool>>&city
 	//Initalise the Starting position
 	pos start(start_x,start_y,0);
 	openlist.push(start);
+
+	int total_steps= 130+60;//Should be 131
 	int max_steps=0;
 	int city_max_x=city[0].size()-1;
     int city_max_y=city.size()-1;
-    cout<<city_max_x<<endl;
+    cout<<" "<<openlist.size()<<">?>"<<total_steps<<endl;
 	while(openlist.size()!=0){
 
         if(openlist.front().steps>total_steps){goto counting;};
@@ -84,19 +86,23 @@ int garden_d_algo2(const int&start_x,const int&start_y,vector<vector<bool>>&city
 
 	}
 	counting:;
-	int options =0;
+
+	int x;
+	int y;
 	for (auto& it: closed_list) {
-        //cout<<it.first<<" : "<<it.second<<endl;
-        if(it.second%2==total_steps%2){options++;}
+		string key = it.first;
+		vector<string> coord = split_string(key,' ');
+		x=stoi(coord[0]);
+		y=stoi(coord[1]);
+		garden_plot_choices[floor(x/city.size())][floor(y/city.size())];
     }
     if(openlist.size()==0){cout<<"Visited all options"<<endl;}
-	return options;
 }
 
 void D_21_2(){
     static vector<string> inputvector;
     string line;
-    ifstream inputread("21-1-1.txt");
+    ifstream inputread("21-1.txt");
     while (getline (inputread, line)) {
     inputvector.push_back(line);
     }
@@ -146,25 +152,36 @@ void D_21_2(){
     int big_start_x=(big_garden[0].size()-1)/2;
 	int big_start_y=(big_garden.size()-1)/2;
 
-    for(auto&line:big_garden){
-        for(auto plot:line){
-                if(plot){cout<<'#';}else{cout<<'.';}
-        } cout<<endl;
-    }
+	if(false){
+		for(auto&line:big_garden){
+			for(auto plot:line){
+				if(plot){cout<<'#';}else{cout<<'.';}
+			} cout<<endl;
+		}
+	}
 
-    return;
     long long choices =0;
     int steps_start_to_edge = ((city.size()-1)/2);
     //The expansion only works if the start is in the center, and there are uninterupted highways leading to the edges
-    choices += garden_d_algo2(start_x,start_y,city,steps_to_take,true);
+
+    //Fill big garden
+    cout<<"Running";
+	garden_big_d_algo(start_x,start_y,city);
+
+	if(true){
+		for(auto&line:garden_plot_choices){
+			for(auto plot:line){
+				cout<<plot<<"\t";
+			} cout<<endl;
+		}
+	}
+
+	return;
     if(steps_to_take>steps_start_to_edge){
         int repeats = steps_to_take-steps_start_to_edge/(city.size()/2);//How many Gardens we just completly envelop by traveling in one distance
-        int sny = 0;//Y pos where you start if you only moved south on the previous start tile
-        long long center_1 = garden_d_algo2(start_x,sny,city,steps_to_take,true);
-        long long center_2 = garden_d_algo2(start_x,sny,city,steps_to_take-1,true);
 
-        choices += 4*pow(center_1,repeats/2);//Formula determined by napkin math
-        choices += 4*pow(center_1,repeats/2);
+        //choices += 4*pow(center_1,repeats/2);//Formula determined by napkin math
+        //choices += 4*pow(center_1,repeats/2);
     }
 
 	cout<<choices<< " choices"<<endl;
