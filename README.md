@@ -9,4 +9,4 @@ Written originally in C++ but after hitting the wall of building a MD5 from scra
 
 
 ### [Year 2023](/2015)
-Written in C++ completed on each day of Release
+Written in C++ completed mostly on each day of Release
