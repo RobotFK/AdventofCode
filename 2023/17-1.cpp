@@ -2,174 +2,84 @@
 #include "days.h"
 #include <fstream>
 #include <vector>
-#include <algorithm>
 #include <unordered_map>
 using namespace std;
 
-struct pos{
-	int x;
-	int y;
-	char last = 'O';
-	//Last direction the the position moved
-	//0 = No Previous direction
-	short moved=1;
-	int cost=0;//amount of heat lost
-	int estimated_cost;//amount of cost we estimate to remain to reach the goal
-	bool operator < (const pos& b) const {
-        return (cost+estimated_cost) < (b.cost+b.estimated_cost);
-    }
+struct c_pos{
+    unsigned int x;
+    unsigned int y;
+    unsigned int cost;
+    bool facing_h; //If the position if facing Horizontal or Verticall (it can only move in the oposite axis next)
+    c_pos(unsigned int ix,unsigned int iy,unsigned int icost,bool ifacing_h){
+        x=ix;
+        y=iy;
+        cost=icost;
+        facing_h =ifacing_h;
+    };
 };
 
-string pos_hash(pos&cur_pos){
-	string key;
-	key.append(to_string(cur_pos.x)).append(" ");
-	key.append(to_string(cur_pos.y)).append(" ");
-	key+=cur_pos.last;
-	key.append(":").append(to_string(cur_pos.moved));
-	return key;
+string pos_to_string(const c_pos cur_pos){
+	return to_string(cur_pos.x)+" "+to_string(cur_pos.y)+" "+(cur_pos.facing_h ? "H" : "V");
 }
 
-string pos_only_hash(pos&cur_pos){
-	string key;
-	key.append(to_string(cur_pos.x)).append(" ");
-	key.append(to_string(cur_pos.y)).append(" ");
-	//key+=cur_pos.last;
-	//key.append(":").append(to_string(cur_pos.moved));
-	return key;
-}
+int min_heat(const int&start_x,const int&start_y,const int&end_x,const int&end_y,const vector<vector<int>>&city,const int most_straight,bool visualsise=false){
 
-string pos_and_dir_hash(pos&cur_pos){
-	string key;
-	key.append(to_string(cur_pos.x)).append(" ");
-	key.append(to_string(cur_pos.y)).append(" ");
-	key+=cur_pos.last;
-	//key.append(":").append(to_string(cur_pos.moved));
-	return key;
-}
+    vector<c_pos>open_list;
+    unordered_map<string,int> closed_list;
 
-int min_heat_A_starv2(int&start_x,int&start_y,int&end_x,int&end_y,vector<vector<int>>&city,bool visualsise=false){
+    //Add the 2 Start nodes to open list;
+    open_list.push_back(c_pos(start_x,start_y,0,true ));
+    open_list.push_back(c_pos(start_x,start_y,0,false));
 
-	unordered_map<string,int> closed_list;
-	unordered_map<string,int> min_traveld;
-	vector<pos> openlist;
+    //Create possible end nodes:
+    string end_h_key = pos_to_string(c_pos(end_x,end_y,0,true ));
+    string end_v_key = pos_to_string(c_pos(end_x,end_y,0,false));
 
-	int max_travel = 3;
+    while(open_list.size()!=0){
+        if(visualsise){cout<<endl<<open_list.size()<<" Open"<<endl;}
+        vector<c_pos> nextlist;
+        for(auto&cur_pos:open_list){
 
-	//Initalise the Starting position
-	pos start;
-	start.x=start_x;
-	start.y=start_y;
-	start.moved=0;
-	start.estimated_cost=end_x-start.x + end_y-start.y; //Really we should take the absolutes here instead
-	openlist.push_back(start);
+            //Test if cur_pos is in the closed list, and skip it if cur_pos.cost is worse or equal
+            if(closed_list.find(pos_to_string(cur_pos)) != closed_list.end()){
+                    if(closed_list[pos_to_string(cur_pos)]<=cur_pos.cost){continue;}
+            }
+            //if(visualsise){cout<< pos_to_string(cur_pos)<<" C:"<< cur_pos.cost<<endl;}
 
-	bool worse_aproach;
+            if(cur_pos.facing_h){//Move North/South
+                for(int i=(-1*most_straight);i<=most_straight;i++){//Y offset
+                    if(i==0){continue;} //Skip not moving
+                    if(cur_pos.y+i <0 || cur_pos.y+i >city.size()-1){continue;}//Out of bounds
 
-	int display=0;
-	while(openlist.size()!=0){
-		//Sort by lowest Cost;
-		sort(openlist.begin(),openlist.end());
+                    unsigned short cost_increase=0;
+                    for(int j=i;j!=0;j>0?j--:j++){cost_increase+=city[cur_pos.y+j][cur_pos.x];}//Adding up the cost of moving i steps to the side
 
-		if(display++%1000==0){//A little glass window to see progress we do
-			cout<<openlist[0].estimated_cost <<" "<<openlist[0].cost<<" Open "<<openlist.size()<<endl;
-		}
+                    nextlist.push_back(c_pos(cur_pos.x,cur_pos.y+i,cur_pos.cost+cost_increase,!cur_pos.facing_h));
+                }
+            }else{
+                for(int i=(-1*most_straight);i<=most_straight;i++){//X offset
+                    if(i==0){continue;} //Skip not moving
+                    if(cur_pos.x+i <0 || cur_pos.x+i >city[0].size()-1){continue;}//Out of bounds
 
-		//Spread open list
-		if(openlist[0].y != 0 && !(openlist[0].last == 'n' && openlist[0].moved == max_travel)&& openlist[0].last != 's'){//Move North
-			pos newpos;
-			newpos.x = openlist[0].x;
-			newpos.y = openlist[0].y-1;
-			newpos.last = 'n';
-			if(openlist[0].last == 'n'){newpos.moved=openlist[0].moved+1;}//Increment consecutive moves North by one if the move before was north
-			newpos.cost = openlist[0].cost + city[newpos.y][newpos.x];
-			newpos.estimated_cost=end_x-newpos.x + end_y-newpos.y;//We estimate that each H or V movement cost 1 (we know that it is more)
-			//Test to see if we are at the end
-			if(newpos.x==end_x &&newpos.y==end_y){return newpos.cost;}
+                    unsigned short cost_increase=0;
+                    for(int j=i;j!=0;j>0?j--:j++){cost_increase+=city[cur_pos.y][cur_pos.x+j];}//Adding up the cost of moving i steps to the side
 
-			worse_aproach=false;
-			if(min_traveld.count(pos_and_dir_hash(newpos))>0){//
-				if(min_traveld[pos_and_dir_hash(newpos)]>newpos.moved){//We have been here already with less moves from this direction
-				worse_aproach=true;
-				}
-			}
-			if(!worse_aproach){
-				//Lastly we only need to check if the position we try to visit has been not visited before
-				//No check for being better needed, as our advance always finds the lowest, because we are starting from the lowest point
-				if(closed_list.count(pos_only_hash(newpos))==0){openlist.push_back(newpos);min_traveld[pos_and_dir_hash(newpos)]=newpos.moved;}
-			}
-		}
-		if(openlist[0].x != city[0].size()-1 && !(openlist[0].last == 'e' && openlist[0].moved == max_travel)&& openlist[0].last != 'w'){//Move East
-			pos newpos;
-			newpos.x = openlist[0].x+1;
-			newpos.y = openlist[0].y;
-			newpos.last = 'e';
-			if(openlist[0].last == 'e'){newpos.moved=openlist[0].moved+1;}
-			newpos.cost = openlist[0].cost + city[newpos.y][newpos.x];
-			newpos.estimated_cost=end_x-newpos.x + end_y-newpos.y;
-			if(newpos.x==end_x &&newpos.y==end_y){return newpos.cost;}
-			worse_aproach=false;
-			if(min_traveld.count(pos_and_dir_hash(newpos))>0){//
-				if(min_traveld[pos_and_dir_hash(newpos)]>newpos.moved){//We have been here already with less moves from this direction
-				worse_aproach=true;
-				}
-			}
-			if(!worse_aproach){
-			if(closed_list.count(pos_only_hash(newpos))==0){openlist.push_back(newpos);min_traveld[pos_and_dir_hash(newpos)]=newpos.moved;}
-			}
-		}
-		if(openlist[0].y != city.size()-1 && !(openlist[0].last == 's' && openlist[0].moved == max_travel)&& openlist[0].last != 'n'){//Move South
-			pos newpos;
-			newpos.x = openlist[0].x;
-			newpos.y = openlist[0].y+1;
-			newpos.last = 's';
-			if(openlist[0].last == 's'){newpos.moved=openlist[0].moved+1;}
-			newpos.cost = openlist[0].cost + city[newpos.y][newpos.x];
-			newpos.estimated_cost=end_x-newpos.x + end_y-newpos.y;
-			if(newpos.x==end_x &&newpos.y==end_y){return newpos.cost;}
-			worse_aproach=false;
-			if(min_traveld.count(pos_and_dir_hash(newpos))>0){//
-				if(min_traveld[pos_and_dir_hash(newpos)]>newpos.moved){//We have been here already with less moves from this direction
-				worse_aproach=true;
-				}
-			}
-			if(!worse_aproach){
-			if(closed_list.count(pos_only_hash(newpos))==0){openlist.push_back(newpos);min_traveld[pos_and_dir_hash(newpos)]=newpos.moved;}
-			}
-		}
-		if(openlist[0].x != 0 && !(openlist[0].last == 'w' && openlist[0].moved == max_travel)&& openlist[0].last != 'e'){//Move West
-			pos newpos;
-			newpos.x = openlist[0].x-1;
-			newpos.y = openlist[0].y;
-			newpos.last = 'w';
-			if(openlist[0].last == 'w'){newpos.moved=openlist[0].moved+1;}
-			newpos.cost = openlist[0].cost + city[newpos.y][newpos.x];
-			newpos.estimated_cost=end_x-newpos.x + end_y-newpos.y;
-			if(newpos.x==end_x &&newpos.y==end_y){return newpos.cost;}
-			worse_aproach=false;
-			if(min_traveld.count(pos_and_dir_hash(newpos))>0){//
-				if(min_traveld[pos_and_dir_hash(newpos)]>newpos.moved){//We have been here already with less moves from this direction
-				worse_aproach=true;
-				}
-			}
-			if(!worse_aproach){
-			if(closed_list.count(pos_only_hash(newpos))==0){openlist.push_back(newpos);min_traveld[pos_and_dir_hash(newpos)]=newpos.moved;}
-			}
-		}
-
-		//Add current Position to the closed list
-		closed_list[pos_only_hash(openlist[0])]=openlist[0].cost;
-		//Remove current Position from the open list
-		openlist.erase(openlist.begin());
-
-	}
-	cout<<"No path Found"<<endl;
-	return -1;
+                    nextlist.push_back(c_pos(cur_pos.x+i,cur_pos.y,cur_pos.cost+cost_increase,!cur_pos.facing_h));
+                }
+            }
+            closed_list[pos_to_string(cur_pos)]=cur_pos.cost;
+        }
+        open_list = nextlist;
+        if(closed_list.find(end_h_key) != closed_list.end()){cout<<"Highscore H:"<<closed_list[end_h_key]<<endl;}
+        if(closed_list.find(end_v_key) != closed_list.end()){cout<<"Highscore V:"<<closed_list[end_v_key]<<endl;}
+    }
+    return min(closed_list[end_h_key],closed_list[end_v_key]);
 }
 
 void D_17_1(){
     static vector<string> inputvector;
     string line;
-    ifstream inputread("17-1.txt");
+    ifstream inputread("17-1-1.txt");
     while (getline (inputread, line)) {
     inputvector.push_back(line);
     }
@@ -183,14 +93,19 @@ void D_17_1(){
 		}
 		city.push_back(newrow);
 	}
-	int start_x=0;
-	int start_y=0;
-	int end_x=city[0].size()-1;
-	int end_y=city.size()-1;
-	int min_heat = min_heat_A_starv2(start_x,start_y,end_x,end_y,city,true);
-	cout<< "Min_heat loss is "<<min_heat<<endl;
+	constexpr int start_x=0;
+	constexpr int start_y=0;
+	constexpr int most_straight=3;
+	const unsigned int end_x=city[0].size()-1;
+	const unsigned int end_y=city.size()-1;
+    cout<<"("<<start_x<<","<<start_y<<") to ("<<end_x<<","<<end_y<<")"<<endl;
+
+	int min_h = min_heat(start_x,start_y,end_x,end_y,city,most_straight,true);
+
+	cout<< "Min_heat loss is "<<min_h<<endl;
 
     return;
 }
 //1100 to high
-//Testcase /w 717 dead
+//Testcase /w 221 dead
+//Reached Expanding 9155 positions with 291289 Dead
