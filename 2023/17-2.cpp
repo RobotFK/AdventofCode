@@ -46,6 +46,8 @@ int min_heat_dijkstra_2(
 
     int lowest_cost =0;//Used only for visualisation
 
+    int lowest_volume=1;
+
     cout<<"Space for "<<open_list.capacity()<<endl;
     open_list.reserve(city.size()*city[0].size()*2);//Automatic Resizing crashes my compiler due to a Memeory acess. This solves it
 
