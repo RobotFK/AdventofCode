@@ -34,10 +34,10 @@ struct knot{ // Knot is a location where the path splits
 };
 
 struct path{
-    int knot_set=1;//32 Bit state of Visited Knots
-    char cur=0; // Is used as a small integer to record current position
+    unsigned int knot_set=1;//32 Bit state of Visited Knots
+    short int cur=0; // Is used as a small integer to record current position
     int sum=0;//Sum the current path
-    path(int iknot_set,char icur,int sum): knot_set(iknot_set), cur(icur){}
+    path(int iknot_set,short int icur,int isum): knot_set(iknot_set), cur(icur), sum(isum){}
     bool contains(int test){return (knot_set>>test)%1;}
 };
 
@@ -98,6 +98,22 @@ map<pair<int,int>,int> map_cost(vector<knot>&knots,bool visuals=false){
     return map_cost;
 }
 
+int dsf_recursive(int knot_id,vector<bool> visited,int current_length,int dest_id,int highest,map<int,vector<int>> &edges,map<pair<int,int>,int> &cost){
+    if(knot_id==dest_id){
+        if(current_length>highest){highest=current_length;
+        cout<<"New Highscore: "<<highest<<endl;}
+        return highest;
+    }
+    visited[knot_id]=true;
+    for(auto&neighbor_id:edges[knot_id]){
+        if(!visited[neighbor_id]){
+            highest = dsf_recursive(neighbor_id, visited, current_length + cost[{knot_id,neighbor_id}],dest_id,highest,edges,cost);
+        }
+    }
+    visited[knot_id]=false;
+    return highest;
+}
+
 void D_23_2(){
     static vector<string> inputvector;
     string line;
@@ -147,7 +163,7 @@ void D_23_2(){
     knot end_k(type[0].size()-2,type.size()-1,++id_counter,"end");
     knots.push_back(end_k);
 
-    cout<<"Counter at "<<id_counter<<endl;
+    cout<<"Id Counter at "<<id_counter<<endl;
 
     //cout<<"There are "<<knots.size()<<" knots"<<endl; //36
     //We can bring this down by ignoring Start,end and the first position and asuming the final (pre end) knot has not been visited
@@ -193,6 +209,7 @@ void D_23_2(){
             }
         }//cout<<endl;
     }
+    cout << "Knots linked" << endl;
 
     //Now, this modification only works because start and end are both only linked to a single knot
     int basecost;//Path from 'start' to the start_knot_id
@@ -225,7 +242,7 @@ void D_23_2(){
     end_knot_id=knots.size();
 
 
-    if(false){
+    if(true){
         for(auto&iknot:knots){
             cout<< iknot.name << " : "<< iknot.id<<endl;
         }
@@ -234,37 +251,12 @@ void D_23_2(){
     map<int,vector<int>> edges = map_edges(knots);
     map<pair<int,int>,int> cost = map_cost(knots);
 
-    queue<path>paths; // The int is the State of visited knots and the Char is the Current knot
+    vector<bool> visited;
+    for(auto&iknot:knots){visited.push_back(false);}
 
-    for(const int& i:edges[start_knot_id]){//Inserting the Inital paths
-        if(i>32){continue;}
-        path newpath(1 << (i-1),i,basecost);
-        paths.push(newpath);
-    }
+    int  highest=0;
+    highest = dsf_recursive(start_knot_id,visited,basecost,end_knot_id,highest,edges,cost);//After Taking Advice this is what allow this Programm to finish in Human runtime
 
-    int  highest=-1;
-
-    while(paths.size()!=0){
-        //cout<<(int)paths.front().cur<<":"<<endl;
-        for(const int& i:edges[paths.front().cur]){
-            //cout<<" -> "<< i<<endl;
-            if(i==end_knot_id){
-                if(paths.front().sum+endcost>highest){
-                    cout<<"New Highscore "<< paths.front().sum +endcost <<endl;
-                    highest=paths.front().sum +endcost;
-                }
-            }
-            if(i>32){continue;}
-            if(paths.front().knot_set << (i-1)%2){
-            path newpath(1 << (i-1)+paths.front().knot_set,i,paths.front().sum);
-            paths.push(newpath);
-            }
-        }
-        //Code here
-       paths.pop();
-    }
-
-    //int  highest=-1;
-    cout<<"Reached end with "<< highest <<" steps"<<endl;
+    cout<<"Reached end with "<< highest+ endcost<<" steps"<<endl;//6030<highest<9811 Is needed !6391
     return;
 }
